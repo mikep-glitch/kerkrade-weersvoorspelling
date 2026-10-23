@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Kerkrade Weersvoorspelling</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+  <header class="w-full max-w-2xl text-center my-4">
+    <h1 class="text-3xl font-bold">Kerkrade Weersvoorspelling</h1>
+    <p class="text-gray-600">Actuele en 5‑daagse voorspelling</p>
+  </header>
+
+  <main class="w-full max-w-2xl bg-white rounded-lg shadow p-6">
+    <div id="current" class="flex items-center space-x-4 mb-6">
+      <img id="icon" class="w-16 h-16" src="" alt="Weericoon">
+      <div>
+        <p id="temp" class="text-4xl font-bold"></p>
+        <p id="desc" class="text-xl capitalize"></p>
+      </div>
+    </div>
+
+    <h2 class="text-2xl font-semibold mb-4">5‑daagse voorspelling</h2>
+    <div id="forecast" class="grid grid-cols-1 md:grid-cols-5 gap-4"></div>
+  </main>
+
+  <footer class="mt-8 text-center text-gray-500">
+    <p>Data provided by <a href="https://openweathermap.org/" class="underline">OpenWeatherMap</a></p>
+  </footer>
+
+  <script>
+    // Vervang 'YOUR_OPENWEATHERMAP_API_KEY' door je eigen API‑sleutel van OpenWeatherMap
+    const apiKey = 'YOUR_OPENWEATHERMAP_API_KEY';
+    const lat = 50.864; // Kerkrade latitude
+    const lon = 6.058;  // Kerkrade longitude
+
+    function kelvinToC(k) {
+      return Math.round(k - 273.15);
+    }
+
+    function getIconUrl(icon) {
+      return `https://openweathermap.org/img/wn/${icon}@2x.png`;
+    }
+
+    async function loadWeather() {
+      try {
+        const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,alerts&appid=${apiKey}`;
+        const { data } = await axios.get(url);
+
+        // Huidig weer
+        const cur = data.current;
+        document.getElementById('temp').textContent = `${kelvinToC(cur.temp)}°C`;
+        document.getElementById('desc').textContent = cur.weather[0].description;
+        document.getElementById('icon').src = getIconUrl(cur.weather[0].icon);
+        document.getElementById('icon').alt = cur.weather[0].description;
+
+        // 5‑daagse forecast
+        const forecastEl = document.getElementById('forecast');
+        forecastEl.innerHTML = '';
+        data.daily.slice(1, 6).forEach(day => {
+          const date = new Date(day.dt * 1000);
+          const dayName = date.toLocaleDateString('nl-NL', { weekday: 'short' });
+          const dayDiv = document.createElement('div');
+          dayDiv.className = 'bg-gray-50 rounded p-3 text-center';
+          dayDiv.innerHTML = `
+            <p class="font-medium">${dayName}</p>
+            <img src="${getIconUrl(day.weather[0].icon)}" alt="${day.weather[0].description}" class="mx-auto">
+            <p class="mt-1">${kelvinToC(day.temp.max)}° / ${kelvinToC(day.temp.min)}°C</p>
+            <p class="text-sm capitalize">${day.weather[0].description}</p>
+          `;
+          forecastEl.appendChild(dayDiv);
+        });
+      } catch (err) {
+        console.error(err);
+        alert('Kan weergegevens niet laden. Controleer je API‑sleutel en internetverbinding.');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadWeather);
+  </script>
+</body>
+</html>
